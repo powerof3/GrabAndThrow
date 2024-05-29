@@ -40,16 +40,16 @@ namespace Hooks
 			static inline constexpr std::size_t            idx = 0x4;
 		};
 
+		// no telekinesis damage
 		struct IsTelekinesisObject
 		{
 			static bool thunk(RE::bhkRigidBody* a_body)
 			{
 				auto result = func(a_body);
-				if (result) {
-					if (GrabThrowHandler::ClearThrownObject(a_body, true)) {
-						RE::TESHavokUtilities::PopTemporaryMass(a_body);
-						return false;
-					}
+				if (result && GrabThrowHandler::HasThrownObject(a_body)) {
+					GrabThrowHandler::GetSingleton()->ClearThrownObject(a_body);
+					RE::TESHavokUtilities::PopTemporaryMass(a_body);
+					return false;
 				}
 				return result;
 			}
@@ -59,14 +59,14 @@ namespace Hooks
 		struct InitializeImpactData
 		{
 			static void thunk(RE::HitData* a_hitData, std::uint64_t a_unk02, RE::TESObjectREFR* a_ref, float a_damageFromImpact, RE::DamageImpactData* a_impactDamageData)
-			{
+			{			
 				float             damageFromImpact = a_damageFromImpact;
 				RE::bhkRigidBody* body = a_impactDamageData->body.get();
 				bool              isThrownObject = GrabThrowHandler::HasThrownObject(body);
 
 				if (body && isThrownObject) {
 					if (damageFromImpact == 0.0f) {
-						auto hkpBody = a_impactDamageData->body->GetRigidBody();
+						auto hkpBody = body->GetRigidBody();
 						auto mass = hkpBody->motion.GetMass();
 						auto speed = a_impactDamageData->velocity.Length();
 
@@ -91,7 +91,8 @@ namespace Hooks
 			static void thunk(RE::bhkRigidBody* a_body)
 			{
 				func(a_body);
-				GrabThrowHandler::ClearThrownObject(a_body, false);
+
+				GrabThrowHandler::GetSingleton()->ClearThrownObject(a_body);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
