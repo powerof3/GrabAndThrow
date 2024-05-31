@@ -38,8 +38,12 @@ void GrabThrowHandler::OnDataLoad()
 	};
 
 	constexpr auto set_gmst = [](const char* setting, float a_value) {
-		RE::GameSettingCollection::GetSingleton()->GetSetting(setting)->data.f = a_value;
+		auto gmst = RE::GameSettingCollection::GetSingleton()->GetSetting(setting);	
+		logger::info("{}: {} -> {}", setting, gmst->GetFloat(), a_value);
+		gmst->data.f = a_value;
 	};
+
+	logger::info("{:*^30}", "GAME SETTINGS");
 
 	fPhysicsDamage1Mass = gmst("fPhysicsDamage1Mass");
 	fPhysicsDamage2Mass = gmst("fPhysicsDamage2Mass");

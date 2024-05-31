@@ -99,6 +99,8 @@ namespace Hooks
 
 		void Install()
 		{
+			logger::info("{:*^30}", "HOOKS");
+			
 			stl::write_vfunc<RE::ReadyWeaponHandler, ProcessButton>();
 			stl::write_vfunc<RE::AttackBlockHandler, ProcessInput>();
 

@@ -52,8 +52,8 @@ private:
 	float fZKeyObjectDamping{ 0.75f };
 	float fZKeySpringDamping{ 0.5f };
 	float fZKeySpringElasticity{ 0.2f };
-	float fZKeyHeavyWeight{ 75.0f };
-	float fZKeyComplexHelperWeightMax{ 100.0f };
+	float fZKeyHeavyWeight{ 150.0f };
+	float fZKeyComplexHelperWeightMax{ 175.0f };
 
 	static constexpr std::uint32_t HK_PROPERTY_TELEKINESIS{ 314159 };
 	static constexpr std::uint32_t HK_PROPERTY_GRABTHROWNOBJECT{ 628318 };

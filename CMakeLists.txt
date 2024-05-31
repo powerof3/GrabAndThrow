@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_GrabAndThrow" CACHE STRING "")
-set(VERSION 1.1.0 CACHE STRING "")
+set(VERSION 1.1.1 CACHE STRING "")
 set(AE_VERSION 1)
 
 # ---- Options ----
