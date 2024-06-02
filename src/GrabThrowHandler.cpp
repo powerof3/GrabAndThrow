@@ -10,7 +10,7 @@ bool GrabThrowHandler::LoadSettings()
 	ini.LoadFile(path.c_str());
 
 	ini::get_value(ini, sendDetectionEvents, "Settings", "bThrownObjectDetectionEnable", nullptr);
-	
+
 	ini::get_value(ini, playerGrabThrowImpulseBase, "Settings", "fPlayerGrabThrowImpulseBase", nullptr);
 	ini::get_value(ini, playerGrabThrowImpulseMax, "Settings", "fPlayerGrabThrowImpulseMax", nullptr);
 	ini::get_value(ini, playerGrabThrowStrengthMult, "Settings", "fPlayerGrabThrowStrengthMult", nullptr);
@@ -38,7 +38,7 @@ void GrabThrowHandler::OnDataLoad()
 	};
 
 	constexpr auto set_gmst = [](const char* setting, float a_value) {
-		auto gmst = RE::GameSettingCollection::GetSingleton()->GetSetting(setting);	
+		auto gmst = RE::GameSettingCollection::GetSingleton()->GetSetting(setting);
 		logger::info("{}: {} -> {}", setting, gmst->GetFloat(), a_value);
 		gmst->data.f = a_value;
 	};
@@ -210,7 +210,7 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 			}
 		}
 	} else {
-		if (IsTrigger(bodyB->collidable.GetCollisionLayer())) {
+		if (!thrownObject || IsTrigger(bodyB->collidable.GetCollisionLayer())) {
 			return;
 		}
 
@@ -226,11 +226,16 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 			if (auto currentProcess = RE::PlayerCharacter::GetSingleton()->currentProcess) {
 				auto mass = bodyA->motion.GetMass();
 
-				SKSE::GetTaskInterface()->AddTask([currentProcess, position, mass, thrownObject]() {
+				SKSE::GetTaskInterface()->AddTask([position, mass, thrownObject]() {
+					auto player = RE::PlayerCharacter::GetSingleton();
 					auto soundLevel = GrabThrowHandler::GetSingleton()->GetSoundLevel(mass);
 					auto soundLevelValue = RE::AIFormulas::GetSoundLevelValue(soundLevel);
 
-					currentProcess->SetActorsDetectionEvent(RE::PlayerCharacter::GetSingleton(), position, soundLevelValue, thrownObject.get());
+					player->currentProcess->SetActorsDetectionEvent(
+						player,
+						position,
+						soundLevelValue,
+						thrownObject.get());
 				});
 			}
 		}
