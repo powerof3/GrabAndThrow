@@ -45,7 +45,8 @@ void GrabThrowHandler::OnDataLoad()
 
 	logger::info("{:*^30}", "GAME SETTINGS");
 
-	fPhysicsDamage1Mass = gmst("fPhysicsDamage1Mass");
+	fPhysicsDamage1Mass = 20.0f;
+
 	fPhysicsDamage2Mass = gmst("fPhysicsDamage2Mass");
 	fPhysicsDamage3Mass = gmst("fPhysicsDamage3Mass");
 	fPhysicsDamage1Damage = gmst("fPhysicsDamage1Damage");
