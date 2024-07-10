@@ -18,6 +18,7 @@ public:
 	void ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a_strength);
 
 private:
+	static float    GetRealMass(RE::hkpRigidBody* a_body);
 	static bool     HasThrownObject(RE::hkpRigidBody* a_body);
 	void            SetThrownObject(RE::hkpRigidBody* a_body, float a_value);
 	float           GetForce(float a_timeHeld, [[maybe_unused]] float a_avModifier) const;
@@ -27,7 +28,15 @@ private:
 	void ContactPointCallback(const RE::hkpContactPointEvent& a_event) override;
 
 	// members
-	bool  sendDetectionEvents{ true };
+	bool sendDetectionEvents{ true };
+	bool  sendTargetHitEvents{ true };
+	bool  sendThrownHitEvents{ true };
+
+	bool  destroyObjects{ true };
+	float minDestructibleSpeed{ 8.0f };
+	float destructibleSelfDamage{ 1.0f };
+	float destructibleTargetDamage{ 1.0f };
+
 	float playerGrabThrowImpulseBase{ 250.0f };
 	float playerGrabThrowImpulseMax{ 1000.0f };
 	float playerGrabThrowStrengthMult{ 500.0f };
@@ -56,5 +65,6 @@ private:
 	float fZKeyComplexHelperWeightMax{ 100.0f };
 
 	static constexpr std::uint32_t HK_PROPERTY_TELEKINESIS{ 314159 };
+	static constexpr std::uint32_t HK_PROPERTY_TEMPORARYMASS{ 314160 };
 	static constexpr std::uint32_t HK_PROPERTY_GRABTHROWNOBJECT{ 628318 };
 };

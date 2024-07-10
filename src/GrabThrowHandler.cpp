@@ -9,12 +9,19 @@ bool GrabThrowHandler::LoadSettings()
 
 	ini.LoadFile(path.c_str());
 
-	ini::get_value(ini, sendDetectionEvents, "Settings", "bThrownObjectDetectionEnable", nullptr);
+	ini::get_value(ini, playerGrabThrowImpulseBase, "Throw", "fPlayerGrabThrowImpulseBase", nullptr);
+	ini::get_value(ini, playerGrabThrowImpulseMax, "Throw", "fPlayerGrabThrowImpulseMax", nullptr);
+	ini::get_value(ini, playerGrabThrowStrengthMult, "Throw", "fPlayerGrabThrowStrengthMult", nullptr);
+	ini::get_value(ini, playerGrabThrowDamageMult, "Throw", "fPlayerGrabThrowDamageMult", nullptr);
 
-	ini::get_value(ini, playerGrabThrowImpulseBase, "Settings", "fPlayerGrabThrowImpulseBase", nullptr);
-	ini::get_value(ini, playerGrabThrowImpulseMax, "Settings", "fPlayerGrabThrowImpulseMax", nullptr);
-	ini::get_value(ini, playerGrabThrowStrengthMult, "Settings", "fPlayerGrabThrowStrengthMult", nullptr);
-	ini::get_value(ini, playerGrabThrowDamageMult, "Settings", "fPlayerGrabThrowDamageMult", nullptr);
+	ini::get_value(ini, sendDetectionEvents, "Events", "bDetectionEvent", nullptr);
+	ini::get_value(ini, sendTargetHitEvents, "Events", "bHitEventTarget", nullptr);
+	ini::get_value(ini, sendThrownHitEvents, "Events", "bHitEventThrownObject", nullptr);
+
+	ini::get_value(ini, destroyObjects, "Destruction", "bEnable", nullptr);
+	ini::get_value(ini, destructibleSelfDamage, "Destruction", "fDestructibleSelfDamage", nullptr);
+	ini::get_value(ini, destructibleTargetDamage, "Destruction", "fDestructibleTargetDamage", nullptr);
+	ini::get_value(ini, minDestructibleSpeed, "Destruction", "fDestructibleMinSpeed", nullptr);
 
 	ini::get_value(ini, fZKeyMaxContactDistance, "GameSettings", "fZKeyMaxContactDistance", nullptr);
 	ini::get_value(ini, fZKeyMaxForce, "GameSettings", "fZKeyMaxForce", nullptr);
@@ -65,6 +72,17 @@ void GrabThrowHandler::OnDataLoad()
 	set_gmst("fZKeySpringElasticity", fZKeySpringElasticity);
 	set_gmst("fZKeyHeavyWeight", fZKeyHeavyWeight);
 	set_gmst("fZKeyComplexHelperWeightMax", fZKeyComplexHelperWeightMax);
+}
+
+float GrabThrowHandler::GetRealMass(RE::hkpRigidBody* a_body)
+{
+	if (a_body) {
+		if (auto property = a_body->GetProperty(HK_PROPERTY_TEMPORARYMASS)) {
+			return property->value.GetFloat();
+		}
+	}
+
+	return a_body->motion.GetMass();
 }
 
 bool GrabThrowHandler::HasThrownObject(RE::hkpRigidBody* a_body)
@@ -200,21 +218,36 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 		bodyB = a_event.bodies[0];
 	}
 
-	RE::TESObjectREFRPtr thrownObject(bodyA ? bodyB->GetUserData() : nullptr);
+	RE::TESObjectREFRPtr thrownObject(bodyA ? bodyA->GetUserData() : nullptr);
 	RE::TESObjectREFRPtr target(bodyB ? bodyB->GetUserData() : nullptr);
 
 	if (auto targetActor = target ? target->As<RE::Actor>() : nullptr) {
-		// hit damage
+		// accumulative hit damage
 		if (auto charController = targetActor->GetCharController()) {
 			if (RE::bhkCharacterController::IsHurtfulBody(bodyA)) {
 				charController->ProcessHurtfulBody(bodyA, a_event.contactPoint);
 			}
 		}
 	} else {
-		if (!thrownObject || IsTrigger(bodyB->collidable.GetCollisionLayer())) {
+		// accept first hit only
+		if (!a_event.firstCallbackForFullManifold || !thrownObject || IsTrigger(bodyB->collidable.GetCollisionLayer())) {
 			return;
 		}
 
+		// Hit
+		if (sendTargetHitEvents && target) {
+			const RE::TESHitEvent event(target.get(), thrownObject.get(), 0, 0, RE::TESHitEvent::Flag::kNone);
+			RE::ScriptEventSourceHolder::GetSingleton()->SendEvent(&event);
+		}
+		if (sendThrownHitEvents) {
+			const RE::TESHitEvent event(thrownObject.get(), target.get(), 0, 0, RE::TESHitEvent::Flag::kNone);
+			RE::ScriptEventSourceHolder::GetSingleton()->SendEvent(&event);
+		}
+
+		auto thrownObjectMass = GrabThrowHandler::GetRealMass(bodyA); // not fake gPhysics1Mass we used for impulse calcs
+		auto targetMass = bodyB->motion.GetMass();
+
+		// Detection
 		if (sendDetectionEvents) {
 			// send detection event
 			const auto&  contactPos = a_event.contactPoint->position;
@@ -225,11 +258,9 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 			                        69.9912510936f;
 
 			if (auto currentProcess = RE::PlayerCharacter::GetSingleton()->currentProcess) {
-				auto mass = bodyA->motion.GetMass();
-
-				SKSE::GetTaskInterface()->AddTask([position, mass, thrownObject]() {
+				SKSE::GetTaskInterface()->AddTask([position, thrownObjectMass, thrownObject]() {
 					auto player = RE::PlayerCharacter::GetSingleton();
-					auto soundLevel = GrabThrowHandler::GetSingleton()->GetSoundLevel(mass);
+					auto soundLevel = GrabThrowHandler::GetSingleton()->GetSoundLevel(thrownObjectMass);
 					auto soundLevelValue = RE::AIFormulas::GetSoundLevelValue(soundLevel);
 
 					player->currentProcess->SetActorsDetectionEvent(
@@ -238,6 +269,18 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 						soundLevelValue,
 						thrownObject.get());
 				});
+			}
+		}
+
+		// Destruction
+		if (destroyObjects) {
+			if (bodyA->motion.linearVelocity.Length3() > minDestructibleSpeed) {
+				if (destructibleTargetDamage > 0.0f && thrownObjectMass >= targetMass) {
+					RE::TaskQueueInterface::GetSingleton()->QueueUpdateDestructibleObject(target.get(), destructibleTargetDamage, false, nullptr);
+				}
+				if (destructibleSelfDamage > 0.0f) {
+					RE::TaskQueueInterface::GetSingleton()->QueueUpdateDestructibleObject(thrownObject.get(), destructibleSelfDamage, false, nullptr);
+				}
 			}
 		}
 	}
