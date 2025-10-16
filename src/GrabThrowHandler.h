@@ -1,7 +1,7 @@
 #pragma once
 
 class GrabThrowHandler :
-	public ISingleton<GrabThrowHandler>,
+	public REX::Singleton<GrabThrowHandler>,
 	public RE::hkpContactListener
 {
 public:
@@ -15,22 +15,23 @@ public:
 	float GetFinalDamageForImpact(float a_mass, float a_speed) const;
 	float GetFinalDamageForImpact(float a_damage) const;
 
-	void ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a_strength);
+	void ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a_heldDuration);
 
 private:
-	static float    GetRealMass(RE::hkpRigidBody* a_body);
-	static bool     HasThrownObject(RE::hkpRigidBody* a_body);
-	void            SetThrownObject(RE::hkpRigidBody* a_body, float a_value);
-	float           GetForce(float a_timeHeld, [[maybe_unused]] float a_avModifier) const;
-	bool            IsTrigger(RE::COL_LAYER a_colLayer);
-	RE::SOUND_LEVEL GetSoundLevel(float a_mass) const;
+	static float                            GetRealMass(RE::hkpRigidBody* a_body);
+	static bool                             HasThrownObject(RE::hkpRigidBody* a_body);
+	void                                    SetThrownObject(RE::hkpRigidBody* a_body, float a_value);
+	float                                   GetForce(float a_timeHeld, [[maybe_unused]] float a_avModifier) const;
+	RE::hkVector4                           GetImpulse(RE::PlayerCharacter* a_player, float a_force, float a_mass) const;
+	bool                                    IsTrigger(RE::COL_LAYER a_colLayer);
+	RE::SOUND_LEVEL                         GetSoundLevel(float a_mass) const;
 
 	void ContactPointCallback(const RE::hkpContactPointEvent& a_event) override;
 
 	// members
 	bool sendDetectionEvents{ true };
-	bool  sendTargetHitEvents{ true };
-	bool  sendThrownHitEvents{ true };
+	bool sendTargetHitEvents{ true };
+	bool sendThrownHitEvents{ true };
 
 	bool  destroyObjects{ true };
 	float minDestructibleSpeed{ 8.0f };
@@ -67,4 +68,6 @@ private:
 	static constexpr std::uint32_t HK_PROPERTY_TELEKINESIS{ 314159 };
 	static constexpr std::uint32_t HK_PROPERTY_TEMPORARYMASS{ 314160 };
 	static constexpr std::uint32_t HK_PROPERTY_GRABTHROWNOBJECT{ 628318 };
+	static constexpr float         BS_TO_HK_SCALE{ 0.0142875f };
+	static constexpr float         HK_TO_BS_SCALE{ 69.991251f };
 };

@@ -40,9 +40,7 @@ bool GrabThrowHandler::LoadSettings()
 
 void GrabThrowHandler::OnDataLoad()
 {
-	constexpr auto gmst = [](const char* setting) {
-		return RE::GameSettingCollection::GetSingleton()->GetSetting(setting)->GetFloat();
-	};
+	using namespace RE::literals;
 
 	constexpr auto set_gmst = [](const char* setting, float a_value) {
 		auto gmst = RE::GameSettingCollection::GetSingleton()->GetSetting(setting);
@@ -54,14 +52,14 @@ void GrabThrowHandler::OnDataLoad()
 
 	fPhysicsDamage1Mass = 20.0f;
 
-	fPhysicsDamage2Mass = gmst("fPhysicsDamage2Mass");
-	fPhysicsDamage3Mass = gmst("fPhysicsDamage3Mass");
-	fPhysicsDamage1Damage = gmst("fPhysicsDamage1Damage");
-	fPhysicsDamage2Damage = gmst("fPhysicsDamage2Damage");
-	fPhysicsDamage3Damage = gmst("fPhysicsDamage3Damage");
-	fPhysicsDamageSpeedMin = gmst("fPhysicsDamageSpeedMin");
-	fPhysicsDamageSpeedMult = gmst("fPhysicsDamageSpeedMult");
-	fPhysicsDamageSpeedBase = gmst("fPhysicsDamageSpeedBase");
+	fPhysicsDamage2Mass = "fPhysicsDamage2Mass"_gs.value();
+	fPhysicsDamage3Mass = "fPhysicsDamage3Mass"_gs.value();
+	fPhysicsDamage1Damage = "fPhysicsDamage1Damage"_gs.value();
+	fPhysicsDamage2Damage = "fPhysicsDamage2Damage"_gs.value();
+	fPhysicsDamage3Damage = "fPhysicsDamage3Damage"_gs.value();
+	fPhysicsDamageSpeedMin = "fPhysicsDamageSpeedMin"_gs.value();
+	fPhysicsDamageSpeedMult = "fPhysicsDamageSpeedMult"_gs.value();
+	fPhysicsDamageSpeedBase = "fPhysicsDamageSpeedBase"_gs.value();
 
 	set_gmst("fZKeyMaxForce", fZKeyMaxForce);
 	set_gmst("fZKeyMaxForceWeightHigh", fZKeyMaxForceWeightHigh);
@@ -80,9 +78,10 @@ float GrabThrowHandler::GetRealMass(RE::hkpRigidBody* a_body)
 		if (auto property = a_body->GetProperty(HK_PROPERTY_TEMPORARYMASS)) {
 			return property->value.GetFloat();
 		}
+		return a_body->motion.GetMass();
 	}
 
-	return a_body->motion.GetMass();
+	return 0.0f;
 }
 
 bool GrabThrowHandler::HasThrownObject(RE::hkpRigidBody* a_body)
@@ -200,6 +199,19 @@ float GrabThrowHandler::GetFinalDamageForImpact(float a_damage) const
 	return a_damage * playerGrabThrowDamageMult;
 }
 
+RE::hkVector4 GrabThrowHandler::GetImpulse(RE::PlayerCharacter* a_player, float a_force, float a_mass) const
+{
+	RE::NiMatrix3 matrix(a_player->GetAngle());
+	float         x = (matrix.entry[0][1] * a_force) * BS_TO_HK_SCALE;
+	float         y = (matrix.entry[1][1] * a_force) * BS_TO_HK_SCALE;
+	float         z = (matrix.entry[2][1] * a_force) * BS_TO_HK_SCALE;
+
+	RE::hkVector4 velocity(x, y, z, 0);
+	RE::hkVector4 impulse = velocity * a_mass;
+
+	return impulse;
+}
+
 void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_event)
 {
 	if (a_event.contactPointProperties->flags.any(RE::hkContactPointMaterial::Flag::kIsDisabled) || !a_event.contactPoint) {
@@ -244,7 +256,7 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 			RE::ScriptEventSourceHolder::GetSingleton()->SendEvent(&event);
 		}
 
-		auto thrownObjectMass = GrabThrowHandler::GetRealMass(bodyA); // not fake gPhysics1Mass we used for impulse calcs
+		auto thrownObjectMass = GrabThrowHandler::GetRealMass(bodyA);  // not fake gPhysics1Mass we used for impulse calcs
 		auto targetMass = bodyB->motion.GetMass();
 
 		// Detection
@@ -255,7 +267,7 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 										contactPos.quad.m128_f32[0],
 										contactPos.quad.m128_f32[1],
 										contactPos.quad.m128_f32[2]) *
-			                        69.9912510936f;
+			                        HK_TO_BS_SCALE;
 
 			if (auto currentProcess = RE::PlayerCharacter::GetSingleton()->currentProcess) {
 				SKSE::GetTaskInterface()->AddTask([position, thrownObjectMass, thrownObject]() {
@@ -286,7 +298,7 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 	}
 }
 
-void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a_strength)
+void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a_heldDuration)
 {
 	auto cell = a_player->GetParentCell();
 	auto bhkWorld = cell ? cell->GetbhkWorld() : nullptr;
@@ -297,7 +309,7 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a
 
 	RE::BSWriteLockGuard locker(bhkWorld->worldLock);
 
-	float force = GetForce(a_strength, a_player->GetActorValue(RE::ActorValue::kOneHanded));
+	float force = GetForce(a_heldDuration, a_player->GetActorValue(RE::ActorValue::kOneHanded));
 
 	for (const auto& mouseSpring : a_player->grabSpring) {
 		if (mouseSpring && mouseSpring->referencedObject) {
@@ -305,7 +317,7 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a
 				if (auto hkpRigidBody = reinterpret_cast<RE::hkpRigidBody*>(hkMouseSpring->entity)) {
 					auto bhkRigidBody = reinterpret_cast<RE::bhkRigidBody*>(hkpRigidBody->userData);
 
-					SetThrownObject(hkpRigidBody, a_strength);
+					SetThrownObject(hkpRigidBody, a_heldDuration);
 
 					auto mass = hkpRigidBody->motion.GetMass();
 					if (mass < fPhysicsDamage1Mass) {
@@ -313,13 +325,7 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a
 						mass = fPhysicsDamage1Mass;
 					}
 
-					RE::NiMatrix3 matrix = RE::PlayerCamera::GetSingleton()->cameraRoot->world.rotate;
-					float         x = (matrix.entry[0][1] * force) * 0.0142875f;
-					float         y = (matrix.entry[1][1] * force) * 0.0142875f;
-					float         z = (matrix.entry[2][1] * force) * 0.0142875f;
-
-					RE::hkVector4 impulse(x, y, z, 0);
-					impulse = impulse * mass;
+					auto impulse = GetImpulse(a_player, force, mass);
 
 					hkpRigidBody->SetLinearVelocity(RE::hkVector4());
 					hkpRigidBody->SetAngularVelocity(RE::hkVector4());

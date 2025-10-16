@@ -5,10 +5,12 @@
 #define NOGDI
 
 #include "RE/Skyrim.h"
+#include "REX/REX/Singleton.h"
 #include "SKSE/SKSE.h"
 
+#include <dxgi.h>
+
 #include <ClibUtil/simpleINI.hpp>
-#include <ClibUtil/singleton.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
 
 #define DLLEXPORT __declspec(dllexport)
@@ -18,7 +20,7 @@ namespace string = clib_util::string;
 namespace ini = clib_util::ini;
 
 using namespace std::literals;
-using namespace clib_util::singleton;
+using namespace RE::literals;
 
 namespace stl
 {
