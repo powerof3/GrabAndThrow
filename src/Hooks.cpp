@@ -59,7 +59,7 @@ namespace Hooks
 		struct InitializeImpactData
 		{
 			static void thunk(RE::HitData* a_hitData, std::uint64_t a_unk02, RE::TESObjectREFR* a_ref, float a_damageFromImpact, RE::DamageImpactData* a_impactDamageData)
-			{			
+			{
 				float             damageFromImpact = a_damageFromImpact;
 				RE::bhkRigidBody* body = a_impactDamageData->body.get();
 				bool              isThrownObject = GrabThrowHandler::HasThrownObject(body);
@@ -100,7 +100,7 @@ namespace Hooks
 		void Install()
 		{
 			logger::info("{:*^30}", "HOOKS");
-			
+
 			stl::write_vfunc<RE::ReadyWeaponHandler, ProcessButton>();
 			stl::write_vfunc<RE::AttackBlockHandler, ProcessInput>();
 
