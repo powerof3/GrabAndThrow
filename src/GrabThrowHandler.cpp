@@ -199,7 +199,7 @@ float GrabThrowHandler::GetFinalDamageForImpact(float a_damage) const
 	return a_damage * playerGrabThrowDamageMult;
 }
 
-RE::hkVector4 GrabThrowHandler::GetImpulse(RE::PlayerCharacter* a_player, float a_force, float a_mass) const
+RE::hkVector4 GrabThrowHandler::GetImpulse(float a_force, float a_mass) const
 {
 	RE::NiMatrix3 matrix = RE::PlayerCamera::GetSingleton()->cameraRoot->world.rotate;
 	float         x = (matrix.entry[0][1] * a_force) * BS_TO_HK_SCALE;
@@ -325,7 +325,7 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a
 						mass = fPhysicsDamage1Mass;
 					}
 
-					auto impulse = GetImpulse(a_player, force, mass);
+					auto impulse = GetImpulse(force, mass);
 
 					hkpRigidBody->SetLinearVelocity(RE::hkVector4());
 					hkpRigidBody->SetAngularVelocity(RE::hkVector4());

@@ -22,7 +22,7 @@ private:
 	static bool     HasThrownObject(RE::hkpRigidBody* a_body);
 	void            SetThrownObject(RE::hkpRigidBody* a_body, float a_value);
 	float           GetForce(float a_timeHeld, [[maybe_unused]] float a_avModifier) const;
-	RE::hkVector4   GetImpulse(RE::PlayerCharacter* a_player, float a_force, float a_mass) const;
+	RE::hkVector4   GetImpulse(float a_force, float a_mass) const;
 	bool            IsTrigger(RE::COL_LAYER a_colLayer);
 	RE::SOUND_LEVEL GetSoundLevel(float a_mass) const;
 
