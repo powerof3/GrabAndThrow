@@ -201,7 +201,7 @@ float GrabThrowHandler::GetFinalDamageForImpact(float a_damage) const
 
 RE::hkVector4 GrabThrowHandler::GetImpulse(RE::PlayerCharacter* a_player, float a_force, float a_mass) const
 {
-	RE::NiMatrix3 matrix(a_player->GetAngle());
+	RE::NiMatrix3 matrix = RE::PlayerCamera::GetSingleton()->cameraRoot->world.rotate;
 	float         x = (matrix.entry[0][1] * a_force) * BS_TO_HK_SCALE;
 	float         y = (matrix.entry[1][1] * a_force) * BS_TO_HK_SCALE;
 	float         z = (matrix.entry[2][1] * a_force) * BS_TO_HK_SCALE;

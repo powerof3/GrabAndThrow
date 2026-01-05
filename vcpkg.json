@@ -1,6 +1,6 @@
 {
   "name": "grab-and-throw",
-  "version-string": "2.1.0",
+  "version-string": "2.1.1",
   "description": "",
   "homepage": "",
   "license": "MIT",
@@ -10,5 +10,5 @@
     "spdlog",
     "xbyak"
   ],
-  "builtin-baseline": "8ce02b3d9a447071083436ad36f318dd19dd19ad"
+  "builtin-baseline": "14bb451131ccf6be50a63a8d9dfe7980e46b5958"
 }
