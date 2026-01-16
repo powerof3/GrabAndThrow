@@ -119,6 +119,8 @@ namespace Hooks
 
 	void Install()
 	{
+		SKSE::AllocTrampoline(14*3);
+		
 		GrabThrow::Install();
 	}
 }
