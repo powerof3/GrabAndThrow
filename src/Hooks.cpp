@@ -38,7 +38,7 @@ namespace Hooks
 					}
 					return;
 				}
-
+				GrabThrowHandler::GetSingleton()->SetChargeDuration(0.0f);
 				return func(a_this, a_event, a_data);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
