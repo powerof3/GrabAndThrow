@@ -113,9 +113,9 @@ namespace Hooks
 
 				if (body) {
 					if (auto hkpBody = body->GetRigidBody()) {
-						REX::INFO("Linear Damping: {}", (float)hkpBody->motion.motionState.linearDamping);
-						REX::INFO("Restitution: {}", (float)hkpBody->material.restitution);
-						REX::INFO("Friction: {}", (float)hkpBody->material.friction);
+						REX::INFO("Linear Damping: {}", static_cast<float>(hkpBody->motion.motionState.linearDamping));
+						REX::INFO("Restitution: {}", static_cast<float>(hkpBody->material.restitution));
+						REX::INFO("Friction: {}", static_cast<float>(hkpBody->material.friction));
 					}
 				}
 

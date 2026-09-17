@@ -1,9 +1,11 @@
 #include "GrabThrowHandler.h"
 
-#include <algorithm>
+#include "TrajectoryOverlay.h"
 
 bool GrabThrowHandler::LoadSettings()
 {
+	(void)TrajectoryOverlay::GetSingleton();
+	
 	const auto store = REX::FIniSettingStore::GetSingleton();
 	store->Init(path.data(), "");
 
