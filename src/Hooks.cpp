@@ -1,5 +1,6 @@
 #include "Hooks.h"
 #include "GrabThrowHandler.h"
+#include "TrajectoryOverlay.h"
 
 namespace Hooks
 {
@@ -27,9 +28,13 @@ namespace Hooks
 				auto player = RE::PlayerCharacter::GetSingleton();
 
 				if (player->grabType == RE::PlayerCharacter::GrabbingType::kNormal) {
+					auto handler = GrabThrowHandler::GetSingleton();
 					if (a_event->IsUp()) {
-						GrabThrowHandler::GetSingleton()->ThrowGrabbedObject(player, a_event->HeldDuration());
+						handler->ThrowGrabbedObject(player);
+						handler->SetChargeDuration(0.0f);
 						player->DestroyMouseSprings();
+					} else if (a_event->IsPressed()) {
+						handler->SetChargeDuration(a_event->HeldDuration());
 					}
 					return;
 				}
@@ -37,7 +42,7 @@ namespace Hooks
 				return func(a_this, a_event, a_data);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
-			static inline constexpr std::size_t            idx = 0x4;
+			static inline std::size_t                      idx = OFFSET_VERSIONED(0x4, 0x6);
 		};
 
 		// no telekinesis damage
@@ -58,7 +63,7 @@ namespace Hooks
 
 		struct InitializeImpactData
 		{
-			static void thunk(RE::HitData* a_hitData, std::uint64_t a_unk02, RE::TESObjectREFR* a_ref, float a_damageFromImpact, RE::DamageImpactData* a_impactDamageData)
+			static void thunk(RE::HitData* a_hitData, RE::TESObjectREFR* a_hitRef, RE::TESObjectREFR* a_ref, float a_damageFromImpact, RE::DamageImpactData* a_impactDamageData)
 			{
 				float             damageFromImpact = a_damageFromImpact;
 				RE::bhkRigidBody* body = a_impactDamageData->body.get();
@@ -77,10 +82,13 @@ namespace Hooks
 					damageFromImpact *= GrabThrowHandler::GetThrownObjectValue(body);
 				}
 
-				func(a_hitData, a_unk02, a_ref, damageFromImpact, a_impactDamageData);
+				func(a_hitData, a_hitRef, a_ref, damageFromImpact, a_impactDamageData);
 
 				if (isThrownObject) {
 					a_hitData->aggressor = RE::PlayerCharacter::GetSingleton()->GetHandle();
+					if (body) {
+						a_hitData->sourceRef = a_hitRef->GetHandle();
+					}
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -97,9 +105,28 @@ namespace Hooks
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
+		struct GetRigidBody
+		{
+			static RE::bhkRigidBody* thunk(RE::bhkNiCollisionObject* a_obj)
+			{
+				auto body = func(a_obj);
+
+				if (body) {
+					if (auto hkpBody = body->GetRigidBody()) {
+						REX::INFO("Linear Damping: {}", (float)hkpBody->motion.motionState.linearDamping);
+						REX::INFO("Restitution: {}", (float)hkpBody->material.restitution);
+						REX::INFO("Friction: {}", (float)hkpBody->material.friction);
+					}
+				}
+
+				return body;
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
 		void Install()
 		{
-			logger::info("{:*^30}", "HOOKS");
+			REX::INFO("{:*^30}", "HOOKS");
 
 			stl::write_vfunc<RE::ReadyWeaponHandler, ProcessButton>();
 			stl::write_vfunc<RE::AttackBlockHandler, ProcessInput>();
@@ -113,14 +140,15 @@ namespace Hooks
 			const REL::Relocation<std::uintptr_t> target2{ RELOCATION_ID(25327, 25850), OFFSET(0xE4, 0xF4) };  // FOCollisionListener::ReferenceDeactivated
 			stl::write_thunk_call<ClearTelekinesisObject>(target2.address());
 
-			logger::info("Installed grab throw hooks");
+			//const REL::Relocation<std::uintptr_t> target3{ RELOCATION_ID(239475, 40552), OFFSET(0xB7, 0xC1) };  // PlayerCharacter::StartGrabObject
+			//stl::write_thunk_call<GetRigidBody>(target3.address());
+
+			REX::INFO("Installed grab throw hooks");
 		}
 	}
 
 	void Install()
 	{
-		SKSE::AllocTrampoline(14*3);
-		
 		GrabThrow::Install();
 	}
 }

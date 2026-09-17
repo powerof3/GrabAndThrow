@@ -1,54 +1,21 @@
 #include "GrabThrowHandler.h"
 
+#include <algorithm>
+
 bool GrabThrowHandler::LoadSettings()
 {
-	const auto path = std::format("Data/SKSE/Plugins/{}.ini", Version::PROJECT);
+	const auto store = REX::FIniSettingStore::GetSingleton();
+	store->Init(path.data(), "");
 
-	CSimpleIniA ini;
-	ini.SetUnicode();
-
-	ini.LoadFile(path.c_str());
-
-	ini::get_value(ini, playerGrabThrowImpulseBase, "Throw", "fPlayerGrabThrowImpulseBase", nullptr);
-	ini::get_value(ini, playerGrabThrowImpulseMax, "Throw", "fPlayerGrabThrowImpulseMax", nullptr);
-	ini::get_value(ini, playerGrabThrowStrengthMult, "Throw", "fPlayerGrabThrowStrengthMult", nullptr);
-	ini::get_value(ini, playerGrabThrowDamageMult, "Throw", "fPlayerGrabThrowDamageMult", nullptr);
-
-	ini::get_value(ini, sendDetectionEvents, "Events", "bDetectionEvent", nullptr);
-	ini::get_value(ini, sendTargetHitEvents, "Events", "bHitEventTarget", nullptr);
-	ini::get_value(ini, sendThrownHitEvents, "Events", "bHitEventThrownObject", nullptr);
-
-	ini::get_value(ini, destroyObjects, "Destruction", "bEnable", nullptr);
-	ini::get_value(ini, destructibleSelfDamage, "Destruction", "fDestructibleSelfDamage", nullptr);
-	ini::get_value(ini, destructibleTargetDamage, "Destruction", "fDestructibleTargetDamage", nullptr);
-	ini::get_value(ini, minDestructibleSpeed, "Destruction", "fDestructibleMinSpeed", nullptr);
-
-	ini::get_value(ini, fZKeyMaxContactDistance, "GameSettings", "fZKeyMaxContactDistance", nullptr);
-	ini::get_value(ini, fZKeyMaxForce, "GameSettings", "fZKeyMaxForce", nullptr);
-	ini::get_value(ini, fZKeyMaxForceWeightHigh, "GameSettings", "fZKeyMaxForceWeightHigh", nullptr);
-	ini::get_value(ini, fZKeyMaxForceWeightLow, "GameSettings", "fZKeyMaxForceWeightLow", nullptr);
-	ini::get_value(ini, fZKeyObjectDamping, "GameSettings", "fZKeyObjectDamping", nullptr);
-	ini::get_value(ini, fZKeySpringDamping, "GameSettings", "fZKeySpringDamping", nullptr);
-	ini::get_value(ini, fZKeySpringElasticity, "GameSettings", "fZKeySpringElasticity", nullptr);
-	ini::get_value(ini, fZKeyHeavyWeight, "GameSettings", "fZKeyHeavyWeight", nullptr);
-	ini::get_value(ini, fZKeyComplexHelperWeightMax, "GameSettings", "fZKeyComplexHelperWeightMax", nullptr);
-
-	(void)ini.SaveFile(path.c_str());
+	store->Load();
+	store->Save();
 
 	return true;
 }
 
 void GrabThrowHandler::OnDataLoad()
 {
-	using namespace RE::literals;
-
-	constexpr auto set_gmst = [](const char* setting, float a_value) {
-		auto gmst = RE::GameSettingCollection::GetSingleton()->GetSetting(setting);
-		logger::info("{}: {} -> {}", setting, gmst->GetFloat(), a_value);
-		gmst->data.f = a_value;
-	};
-
-	logger::info("{:*^30}", "GAME SETTINGS");
+	REX::INFO("{:*^30}", "GAME SETTINGS");
 
 	fPhysicsDamage1Mass = 20.0f;
 
@@ -61,6 +28,17 @@ void GrabThrowHandler::OnDataLoad()
 	fPhysicsDamageSpeedMult = "fPhysicsDamageSpeedMult"_gs.value();
 	fPhysicsDamageSpeedBase = "fPhysicsDamageSpeedBase"_gs.value();
 
+	ApplyGameSettings();
+}
+
+void GrabThrowHandler::ApplyGameSettings() const
+{
+	constexpr auto set_gmst = [](const char* setting, float a_value) {
+		auto gmst = RE::GameSettingCollection::GetSingleton()->GetSetting(setting);
+		REX::INFO("{}: {} -> {}", setting, gmst->GetFloat(), a_value);
+		gmst->data.f = a_value;
+	};
+
 	set_gmst("fZKeyMaxForce", fZKeyMaxForce);
 	set_gmst("fZKeyMaxForceWeightHigh", fZKeyMaxForceWeightHigh);
 	set_gmst("fZKeyMaxForceWeightLow", fZKeyMaxForceWeightLow);
@@ -72,10 +50,15 @@ void GrabThrowHandler::OnDataLoad()
 	set_gmst("fZKeyComplexHelperWeightMax", fZKeyComplexHelperWeightMax);
 }
 
+void GrabThrowHandler::SaveSettings() const
+{
+	REX::FIniSettingStore::GetSingleton()->Save();
+}
+
 float GrabThrowHandler::GetRealMass(RE::hkpRigidBody* a_body)
 {
 	if (a_body) {
-		if (auto property = a_body->GetProperty(HK_PROPERTY_TEMPORARYMASS)) {
+		if (auto property = a_body->GetProperty(RE::HK_PROPERTY_TEMPORARYMASS)) {
 			return property->value.GetFloat();
 		}
 		return a_body->motion.GetMass();
@@ -86,13 +69,13 @@ float GrabThrowHandler::GetRealMass(RE::hkpRigidBody* a_body)
 
 bool GrabThrowHandler::HasThrownObject(RE::hkpRigidBody* a_body)
 {
-	return a_body && a_body->HasProperty(HK_PROPERTY_GRABTHROWNOBJECT);
+	return a_body && a_body->HasProperty(RE::HK_PROPERTY_GRABTHROWNOBJECT);
 }
 
 void GrabThrowHandler::SetThrownObject(RE::hkpRigidBody* a_body, float a_value)
 {
-	if (!a_body->HasProperty(HK_PROPERTY_GRABTHROWNOBJECT)) {
-		a_body->SetProperty(HK_PROPERTY_GRABTHROWNOBJECT, a_value);
+	if (!a_body->HasProperty(RE::HK_PROPERTY_GRABTHROWNOBJECT)) {
+		a_body->SetProperty(RE::HK_PROPERTY_GRABTHROWNOBJECT, a_value);
 		a_body->AddContactListener(this);
 	}
 }
@@ -104,10 +87,8 @@ bool GrabThrowHandler::HasThrownObject(RE::bhkRigidBody* a_body)
 
 float GrabThrowHandler::GetThrownObjectValue(RE::bhkRigidBody* a_body)
 {
-	auto hkpBody = a_body ? a_body->GetRigidBody() : nullptr;
-
-	if (hkpBody) {
-		if (auto property = hkpBody->GetProperty(HK_PROPERTY_GRABTHROWNOBJECT)) {
+	if (auto hkpBody = a_body ? a_body->GetRigidBody() : nullptr) {
+		if (auto property = hkpBody->GetProperty(RE::HK_PROPERTY_GRABTHROWNOBJECT)) {
 			return property->value.GetFloat() + 1.0f;
 		}
 	}
@@ -117,10 +98,8 @@ float GrabThrowHandler::GetThrownObjectValue(RE::bhkRigidBody* a_body)
 
 bool GrabThrowHandler::ClearThrownObject(RE::bhkRigidBody* a_body)
 {
-	auto hkpBody = a_body ? a_body->GetRigidBody() : nullptr;
-
-	if (hkpBody && hkpBody->HasProperty(HK_PROPERTY_GRABTHROWNOBJECT)) {
-		hkpBody->RemoveProperty(HK_PROPERTY_GRABTHROWNOBJECT);
+	if (auto hkpBody = a_body ? a_body->GetRigidBody() : nullptr; hkpBody && hkpBody->HasProperty(RE::HK_PROPERTY_GRABTHROWNOBJECT)) {
+		hkpBody->RemoveProperty(RE::HK_PROPERTY_GRABTHROWNOBJECT);
 		hkpBody->RemoveContactListener(this);
 		return true;
 	}
@@ -128,13 +107,36 @@ bool GrabThrowHandler::ClearThrownObject(RE::bhkRigidBody* a_body)
 	return false;
 }
 
-float GrabThrowHandler::GetForce(float a_timeHeld, [[maybe_unused]] float a_avModifier) const
+float GrabThrowHandler::GetForce() const
 {
-	auto force = (a_timeHeld * playerGrabThrowStrengthMult);
-	if (force > playerGrabThrowImpulseMax) {
-		force = playerGrabThrowImpulseMax;
+	auto force = (chargeDuration * playerGrabThrowStrengthMult);
+	force = std::min(force, playerGrabThrowImpulseMax.GetValue());
+	force += playerGrabThrowImpulseBase;
+	return force;
+}
+
+RE::NiPoint3 GrabThrowHandler::GetAimDirection(RE::PlayerCharacter* a_player) const
+{
+	const auto camera = RE::PlayerCamera::GetSingleton();
+	
+	if (camera && camera->cameraRoot) {
+		const auto&  rot = camera->cameraRoot->world.rotate;
+		RE::NiPoint3 dir(rot.entry[0][1], rot.entry[1][1], rot.entry[2][1]);
+		if (dir.Unitize() > 0.0f) {
+			return dir;
+		}
 	}
-	return force + playerGrabThrowImpulseBase;
+
+	const float pitch = a_player->GetAngleX();
+	const float yaw = a_player->GetAngleZ();
+	const float cosPitch = std::cos(pitch);
+
+	RE::NiPoint3 dir(
+		std::sin(yaw) * cosPitch,
+		std::cos(yaw) * cosPitch,
+		-std::sin(pitch));
+	dir.Unitize();
+	return dir;
 }
 
 bool GrabThrowHandler::IsTrigger(RE::COL_LAYER a_colLayer)
@@ -199,17 +201,31 @@ float GrabThrowHandler::GetFinalDamageForImpact(float a_damage) const
 	return a_damage * playerGrabThrowDamageMult;
 }
 
-RE::hkVector4 GrabThrowHandler::GetImpulse(float a_force, float a_mass) const
+RE::NiPoint3 GrabThrowHandler::GetThrowVelocity() const
 {
-	RE::NiMatrix3 matrix = RE::PlayerCamera::GetSingleton()->cameraRoot->world.rotate;
-	float         x = (matrix.entry[0][1] * a_force) * BS_TO_HK_SCALE;
-	float         y = (matrix.entry[1][1] * a_force) * BS_TO_HK_SCALE;
-	float         z = (matrix.entry[2][1] * a_force) * BS_TO_HK_SCALE;
+	const auto player = RE::PlayerCharacter::GetSingleton();
+	return GetAimDirection(player) * GetForce();
+}
 
-	RE::hkVector4 velocity(x, y, z, 0);
-	RE::hkVector4 impulse = velocity * a_mass;
+RE::hkpRigidBody* GrabThrowHandler::GetGrabbedBody(RE::PlayerCharacter* a_player) const
+{
+	for (const auto& mouseSpring : a_player->grabSpring) {
+		if (mouseSpring && mouseSpring->referencedObject) {
+			if (auto hkMouseSpring = skyrim_cast<RE::hkpMouseSpringAction*>(mouseSpring->referencedObject.get())) {
+				return reinterpret_cast<RE::hkpRigidBody*>(hkMouseSpring->entity);
+			}
+		}
+	}
+	return nullptr;
+}
 
-	return impulse;
+float GrabThrowHandler::GetChargeFraction() const
+{
+	const float chargeTime = playerGrabThrowStrengthMult > 0.0f ?
+	                             playerGrabThrowImpulseMax / playerGrabThrowStrengthMult :
+	                             0.0f;
+
+	return chargeTime > 0.0f ? std::clamp(chargeDuration / chargeTime, 0.0f, 1.0f) : 1.0f;
 }
 
 void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_event)
@@ -246,13 +262,15 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 			return;
 		}
 
+		bool playerSneaking = RE::PlayerCharacter::GetSingleton()->IsSneaking();
+
 		// Hit
 		if (sendTargetHitEvents && target) {
-			const RE::TESHitEvent event(target.get(), thrownObject.get(), 0, 0, RE::TESHitEvent::Flag::kNone);
+			const RE::TESHitEvent event(target.get(), thrownObject.get(), 0x14, 0, playerSneaking ? RE::TESHitEvent::Flag::kSneakAttack : RE::TESHitEvent::Flag::kNone);
 			RE::ScriptEventSourceHolder::GetSingleton()->SendEvent(&event);
 		}
 		if (sendThrownHitEvents) {
-			const RE::TESHitEvent event(thrownObject.get(), target.get(), 0, 0, RE::TESHitEvent::Flag::kNone);
+			const RE::TESHitEvent event(thrownObject.get(), target.get(), 0x14, 0, playerSneaking ? RE::TESHitEvent::Flag::kSneakAttack : RE::TESHitEvent::Flag::kNone);
 			RE::ScriptEventSourceHolder::GetSingleton()->SendEvent(&event);
 		}
 
@@ -262,14 +280,9 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 		// Detection
 		if (sendDetectionEvents) {
 			// send detection event
-			const auto&  contactPos = a_event.contactPoint->position;
-			RE::NiPoint3 position = RE::NiPoint3(
-										contactPos.quad.m128_f32[0],
-										contactPos.quad.m128_f32[1],
-										contactPos.quad.m128_f32[2]) *
-			                        HK_TO_BS_SCALE;
+			auto position = RE::HKToGame(a_event.contactPoint->position);
 
-			if (auto currentProcess = RE::PlayerCharacter::GetSingleton()->currentProcess) {
+			if (RE::PlayerCharacter::GetSingleton()->currentProcess) {
 				SKSE::GetTaskInterface()->AddTask([position, thrownObjectMass, thrownObject]() {
 					auto player = RE::PlayerCharacter::GetSingleton();
 					auto soundLevel = GrabThrowHandler::GetSingleton()->GetSoundLevel(thrownObjectMass);
@@ -298,7 +311,7 @@ void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_ev
 	}
 }
 
-void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a_heldDuration)
+void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player)
 {
 	auto cell = a_player->GetParentCell();
 	auto bhkWorld = cell ? cell->GetbhkWorld() : nullptr;
@@ -309,7 +322,8 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a
 
 	RE::BSWriteLockGuard locker(bhkWorld->worldLock);
 
-	float force = GetForce(a_heldDuration, a_player->GetActorValue(RE::ActorValue::kOneHanded));
+	RE::NiPoint3  velocity = GetThrowVelocity() * RE::BS_TO_HK_SCALE;
+	RE::hkVector4 hkVelocity(velocity.x, velocity.y, velocity.z, 0);
 
 	for (const auto& mouseSpring : a_player->grabSpring) {
 		if (mouseSpring && mouseSpring->referencedObject) {
@@ -317,7 +331,7 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a
 				if (auto hkpRigidBody = reinterpret_cast<RE::hkpRigidBody*>(hkMouseSpring->entity)) {
 					auto bhkRigidBody = reinterpret_cast<RE::bhkRigidBody*>(hkpRigidBody->userData);
 
-					SetThrownObject(hkpRigidBody, a_heldDuration);
+					SetThrownObject(hkpRigidBody, GetChargeDuration());
 
 					auto mass = hkpRigidBody->motion.GetMass();
 					if (mass < fPhysicsDamage1Mass) {
@@ -325,11 +339,9 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player, float a
 						mass = fPhysicsDamage1Mass;
 					}
 
-					auto impulse = GetImpulse(force, mass);
-
 					hkpRigidBody->SetLinearVelocity(RE::hkVector4());
 					hkpRigidBody->SetAngularVelocity(RE::hkVector4());
-					hkpRigidBody->ApplyLinearImpulse(impulse);
+					hkpRigidBody->ApplyLinearImpulse(hkVelocity * mass);
 				}
 			}
 		}
