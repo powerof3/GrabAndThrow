@@ -10,13 +10,12 @@
 
 #include <dxgi.h>
 #include <imgui.h>
+#include <boost/regex.hpp>
 
 #include <ClibUtil/editorID.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
 
 #include "FUCK_API.h"
-
-#define DLLEXPORT __declspec(dllexport)
 
 using namespace std::literals;
 using namespace RE::literals;

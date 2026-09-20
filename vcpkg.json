@@ -5,6 +5,7 @@
   "homepage": "",
   "license": "GPL-3.0-or-later",
   "dependencies": [
+    "boost-regex",
     "clib-util",
     {
       "name": "commonlib-shared",

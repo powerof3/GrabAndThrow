@@ -144,7 +144,9 @@ else ()
 endif()
 
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/detail/SimpleIni.h")
- find_package(imgui CONFIG REQUIRED)
+
+find_package(boost_regex CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 # ---- Add source files ----
 
@@ -203,6 +205,7 @@ target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
 		${CommonLibName}::${CommonLibName}
+		Boost::regex
 		imgui::imgui
 )
 

@@ -4,12 +4,14 @@
 
 bool GrabThrowHandler::LoadSettings()
 {
-	(void)TrajectoryOverlay::GetSingleton();
+	auto overlay = TrajectoryOverlay::GetSingleton();
 	
 	const auto store = REX::FIniSettingStore::GetSingleton();
 	store->Init(path.data(), "");
 
 	store->Load();
+	overlay->Load();
+
 	store->Save();
 
 	return true;
@@ -54,6 +56,8 @@ void GrabThrowHandler::ApplyGameSettings() const
 
 void GrabThrowHandler::SaveSettings() const
 {
+	TrajectoryOverlay::GetSingleton()->Save();
+	
 	REX::FIniSettingStore::GetSingleton()->Save();
 }
 
@@ -111,13 +115,14 @@ bool GrabThrowHandler::ClearThrownObject(RE::bhkRigidBody* a_body)
 
 float GrabThrowHandler::GetForce() const
 {
-	auto force = (chargeDuration * playerGrabThrowStrengthMult);
-	force = std::min(force, playerGrabThrowImpulseMax.GetValue());
-	force += playerGrabThrowImpulseBase;
-	return force;
+	auto force = chargeDuration * playerGrabThrowStrengthMult;
+	if (playerGrabThrowImpulseMax > 0.0f) {
+		force = std::min(force, playerGrabThrowImpulseMax.GetValue());
+	}
+	return force + playerGrabThrowImpulseBase;
 }
 
-RE::NiPoint3 GrabThrowHandler::GetAimDirection(RE::PlayerCharacter* a_player) const
+RE::NiPoint3 GrabThrowHandler::GetAimDirection(RE::PlayerCharacter* a_player)
 {
 	const auto camera = RE::PlayerCamera::GetSingleton();
 	
@@ -209,7 +214,7 @@ RE::NiPoint3 GrabThrowHandler::GetThrowVelocity() const
 	return GetAimDirection(player) * GetForce();
 }
 
-RE::hkpRigidBody* GrabThrowHandler::GetGrabbedBody(RE::PlayerCharacter* a_player) const
+RE::hkpRigidBody* GrabThrowHandler::GetGrabbedBody(RE::PlayerCharacter* a_player)
 {
 	for (const auto& mouseSpring : a_player->grabSpring) {
 		if (mouseSpring && mouseSpring->referencedObject) {
@@ -223,11 +228,10 @@ RE::hkpRigidBody* GrabThrowHandler::GetGrabbedBody(RE::PlayerCharacter* a_player
 
 float GrabThrowHandler::GetChargeFraction() const
 {
-	const float chargeTime = playerGrabThrowStrengthMult > 0.0f ?
+	const float chargeTime = (playerGrabThrowStrengthMult > 0.0f && playerGrabThrowImpulseMax > 0.0f) ?
 	                             playerGrabThrowImpulseMax / playerGrabThrowStrengthMult :
-	                             0.0f;
-
-	return chargeTime > 0.0f ? std::clamp(chargeDuration / chargeTime, 0.0f, 1.0f) : 1.0f;
+	                             2.0f; 
+	return std::clamp(chargeDuration / chargeTime, 0.0f, 1.0f);
 }
 
 void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_event)

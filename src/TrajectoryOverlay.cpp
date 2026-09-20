@@ -2,14 +2,6 @@
 
 #include "GrabThrowHandler.h"
 
-void TrajectoryOverlay::TickObjectPath(RE::NiPoint3& a_position, RE::NiPoint3& a_velocity, const RE::NiPoint3& a_gravity, float a_dt) const
-{
-	const RE::NiPoint3 step = a_gravity - (a_velocity * RE::OBJECT_LINEAR_DAMPING);
-
-	a_velocity += step * a_dt;
-	a_position += a_velocity * a_dt;
-}
-
 void TrajectoryOverlay::RenderOverlay()
 {
 	if (!enabled) {
@@ -21,13 +13,18 @@ void TrajectoryOverlay::RenderOverlay()
 		return;
 	}
 
+	const auto handler = GrabThrowHandler::GetSingleton();
+
+	if (showWhenCharging && handler->GetChargeDuration() <= 0.0f) {
+		return;
+	}
+
 	const auto cell = player->GetParentCell();
 	const auto bhkWorld = cell ? cell->GetbhkWorld() : nullptr;
 	if (!bhkWorld) {
 		return;
 	}
 
-	const auto handler = GrabThrowHandler::GetSingleton();
 
 	std::array<Segment, segCount> points;
 	std::int32_t                  entries = 0;
@@ -80,7 +77,7 @@ void TrajectoryOverlay::RenderOverlay()
 						break;
 					default:
 						break;
-					}	
+					}
 
 					// exit simulation
 					break;
@@ -96,39 +93,89 @@ void TrajectoryOverlay::RenderOverlay()
 		}
 	}
 
-	const float chargeT = handler->GetChargeFraction();
-	const auto  r = 1.0f;
-	const auto  g = std::lerp(251.0f, 170.0f, chargeT) / 255.0f;
-	const auto  b = std::lerp(251.0f, 40.0f, chargeT) / 255.0f;
+	const auto max = static_cast<float>(entries);
 
-	const float max = static_cast<float>(entries);
-	const auto  lineThickness = FUCK::Scale(thickness);
+	if (thickness == 0.0f) {
+		thickness = FUCK::Scale(thicknessImpl);
+	}
+
+	auto lineColor = GetLineColor(handler->GetChargeFraction());
 
 	for (std::int32_t i = 0; i < entries; i++) {
 		auto& [p1, p2] = points[i];
 
-		ImVec2 sp1, sp2;
+		ImVec2 sp1;
+		ImVec2 sp2;
 		if (!FUCK::WorldToScreenLoc(p1, sp1) || !FUCK::WorldToScreenLoc(p2, sp2)) {
 			continue;
 		}
-	
-		const float cur = static_cast<float>(i);
-		const float dt = max - (cur + 0.5f);
-		const float alphaLinear = 1.0f - std::clamp(dt / max, 0.0f, 1.0f);
-		const float alpha = std::pow(alphaLinear, 2.20f);
 
-		FUCK::DrawLine(sp1, sp2, ImVec4(r, g, b, (trajectoryAlpha * alpha) /  255.0f), lineThickness);
+		const auto  cur = static_cast<float>(i);
+		const float dt = max - (cur + 0.5f);
+		const float alpha = 1.0f - std::clamp(dt / max, 0.0f, 1.0f);
+
+		FUCK::DrawLine(sp1, sp2, ImVec4(lineColor.x, lineColor.y, lineColor.z, (static_cast<float>(trajectoryAlpha) * alpha) / 255.0f), thickness);
 	}
 
 	if (hit) {
-		ImVec2 screen;
-		if (FUCK::WorldToScreenLoc(hitPos, screen))
-			{
-			const auto markerRadius = FUCK::Scale(markerSizeImpl);
-			const auto markerColor = hitCharacter ?
-			                             ImVec4(255.0f / 255.0f, 40.0f / 255.0f, 40.0f / 255.0f, static_cast<float>(trajectoryAlpha) / 255.0f) :
-			                             ImVec4(251.0f / 255.0f, 251.0f / 255.0f, 251.0f / 255.0f, static_cast<float>(trajectoryAlpha) / 255.0f);
-			FUCK::DrawCircleFilled(screen, markerRadius, markerColor);
+		if (ImVec2 screen; FUCK::WorldToScreenLoc(hitPos, screen)) {
+			if (markerSize == 0.0f) {
+				markerSize = FUCK::Scale(markerSizeImpl);
+			}
+			const auto actualMarkerColor = hitCharacter ?
+				                               markerColorActor.GetColor(static_cast<float>(trajectoryAlpha) / 255.0f) :
+				                               markerColor.GetColor(static_cast<float>(trajectoryAlpha) / 255.0f);
+			FUCK::DrawCircleFilled(screen, markerSize, actualMarkerColor);
 		}
 	}
+}
+
+void TrajectoryOverlay::Load()
+{
+	lineColorUncharged.Load();
+	lineColorCharged.Load();
+	markerColor.Load();
+	markerColorActor.Load();
+}
+
+void TrajectoryOverlay::Save()
+{
+	lineColorUncharged.Save();
+	lineColorCharged.Save();
+	markerColor.Save();
+	markerColorActor.Save();
+}
+
+TrajectoryOverlay::ColorSetting::ColorSetting(std::string_view a_key, ImVec4 a_defaultRGB) :
+	setting("Trajectory", a_key, ToString(a_defaultRGB, true)),
+	color(a_defaultRGB)
+{}
+
+void TrajectoryOverlay::ColorSetting::Load()
+{
+	color = ToColor<ImVec4>(setting.GetValue());
+}
+
+void TrajectoryOverlay::ColorSetting::Save()
+{
+	setting.SetValue(ToString(color, true));
+}
+
+void TrajectoryOverlay::TickObjectPath(RE::NiPoint3& a_position, RE::NiPoint3& a_velocity, const RE::NiPoint3& a_gravity, float a_dt)
+{
+	const RE::NiPoint3 step = a_gravity - (a_velocity * RE::OBJECT_LINEAR_DAMPING);
+
+	a_velocity += step * a_dt;
+	a_position += a_velocity * a_dt;
+}
+
+ImVec4 TrajectoryOverlay::GetLineColor(float a_chargeFraction) const
+{
+	const auto& uncharged = lineColorUncharged.GetColor();
+	const auto& charged = lineColorCharged.GetColor();
+
+	return { std::lerp(uncharged.x, charged.x, a_chargeFraction),
+	         std::lerp(uncharged.y, charged.y, a_chargeFraction),                 
+	         std::lerp(uncharged.z, charged.z, a_chargeFraction),     
+	         uncharged.w };
 }

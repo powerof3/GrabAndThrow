@@ -39,7 +39,7 @@ namespace Hooks
 					return;
 				}
 				GrabThrowHandler::GetSingleton()->SetChargeDuration(0.0f);
-				return func(a_this, a_event, a_data);
+				func(a_this, a_event, a_data);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 			static inline std::size_t                      idx = OFFSET_VERSIONED(0x4, 0x6);

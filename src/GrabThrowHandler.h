@@ -17,8 +17,8 @@ public:
 
 	void ThrowGrabbedObject(RE::PlayerCharacter* a_player);
 
-	RE::NiPoint3      GetThrowVelocity() const;  // game units/s
-	RE::hkpRigidBody* GetGrabbedBody(RE::PlayerCharacter* a_player) const;
+	RE::NiPoint3             GetThrowVelocity() const;  // game units/s
+	static RE::hkpRigidBody* GetGrabbedBody(RE::PlayerCharacter* a_player);
 
 	void  SetChargeDuration(float a_heldDuration) { chargeDuration = a_heldDuration; }
 	float GetChargeDuration() const { return chargeDuration; }
@@ -30,13 +30,13 @@ public:
 private:
 	friend class SettingsTool;
 
-	static float    GetRealMass(RE::hkpRigidBody* a_body);
-	static bool     HasThrownObject(RE::hkpRigidBody* a_body);
-	void            SetThrownObject(RE::hkpRigidBody* a_body, float a_value);
-	float           GetForce() const;
-	RE::NiPoint3    GetAimDirection(RE::PlayerCharacter* a_player) const;
-	bool            IsTrigger(RE::COL_LAYER a_colLayer);
-	RE::SOUND_LEVEL GetSoundLevel(float a_mass) const;
+	static float        GetRealMass(RE::hkpRigidBody* a_body);
+	static bool         HasThrownObject(RE::hkpRigidBody* a_body);
+	void                SetThrownObject(RE::hkpRigidBody* a_body, float a_value);
+	float               GetForce() const;
+	static RE::NiPoint3 GetAimDirection(RE::PlayerCharacter* a_player);
+	static bool         IsTrigger(RE::COL_LAYER a_colLayer);
+	RE::SOUND_LEVEL     GetSoundLevel(float a_mass) const;
 
 	void ContactPointCallback(const RE::hkpContactPointEvent& a_event) override;
 

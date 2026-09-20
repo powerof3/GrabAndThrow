@@ -69,12 +69,27 @@ void SettingsTool::Draw()
 			FUCK::Checkbox("$GT_ShowTrajectory"_T, &stl::setting(overlay->enabled));
 
 			FUCK::BeginDisabled(!overlay->enabled);
+			{
+				FUCK::Checkbox("$GT_ShowTrajectoryWhenCharging"_T, &stl::setting(overlay->showWhenCharging));
+				
+				FUCK::SliderInt("$GT_Opacity"_T, &stl::setting(overlay->trajectoryAlpha), 0, 255);
 
-			FUCK::SliderInt("$GT_Opacity"_T, &stl::setting(overlay->trajectoryAlpha), 0, 255);
-			FUCK::SliderFloat("$GT_LineThickness"_T, &stl::setting(overlay->thickness), 1.0f, 10.0f, "%.1f");
-			FUCK::SliderFloat("$GT_MarkerSize"_T, &stl::setting(overlay->markerSizeImpl), 2.0f, 24.0f, "%.0f");
+				if (FUCK::SliderFloat("$GT_LineThickness"_T, &stl::setting(overlay->thicknessImpl), 1.0f, 10.0f, "%.1f")) {
+					overlay->thickness = FUCK::Scale(overlay->thicknessImpl);
+				}
 
+				if (FUCK::SliderFloat("$GT_MarkerSize"_T, &stl::setting(overlay->markerSizeImpl), 2.0f, 24.0f, "%.0f")) {
+					overlay->markerSize = FUCK::Scale(overlay->markerSizeImpl);
+				}
+
+				FUCK::ColorEdit3("$GT_LineColorUncharged"_T, &overlay->lineColorUncharged.GetColor().x);
+				FUCK::ColorEdit3("$GT_LineColorCharged"_T, &overlay->lineColorCharged.GetColor().x);
+
+				FUCK::ColorEdit3("$GT_MarkerColor"_T, &overlay->markerColor.GetColor().x);
+				FUCK::ColorEdit3("$GT_MarkerColorActor"_T, &overlay->markerColorActor.GetColor().x);
+			}
 			FUCK::EndDisabled();
+
 			FUCK::EndTabItem();
 		}
 		FUCK::EndTabBar();
