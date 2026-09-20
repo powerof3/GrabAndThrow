@@ -194,9 +194,9 @@ ImVec4 TrajectoryOverlay::ColorSetting::ToColor(const std::string& a_str)
 std::string TrajectoryOverlay::ColorSetting::ToString(const ImVec4& a_color, bool a_hex)
 {
 	if (a_hex) {
-		return std::format("#{:02X}{:02X}{:02X}{:02X}", static_cast<std::uint32_t>(255.0f * a_color.x), static_cast<std::uint32_t>(255.0f * a_color.y), static_cast<std::uint32_t>(255.0f * a_color.z), static_cast<std::uint32_t>(255.0f * a_color.w));
+		return std::format("#{:02X}{:02X}{:02X}", static_cast<std::uint32_t>(255.0f * a_color.x), static_cast<std::uint32_t>(255.0f * a_color.y), static_cast<std::uint32_t>(255.0f * a_color.z));
 	}
-	return std::format("{},{},{},{}", static_cast<std::uint32_t>(255.0f * a_color.x), static_cast<std::uint32_t>(255.0f * a_color.y), static_cast<std::uint32_t>(255.0f * a_color.z), static_cast<std::uint32_t>(255.0f * a_color.w));
+	return std::format("{},{},{}", static_cast<std::uint32_t>(255.0f * a_color.x), static_cast<std::uint32_t>(255.0f * a_color.y), static_cast<std::uint32_t>(255.0f * a_color.z));
 }
 
 void TrajectoryOverlay::TickObjectPath(RE::NiPoint3& a_position, RE::NiPoint3& a_velocity, const RE::NiPoint3& a_gravity, float a_dt)
