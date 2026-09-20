@@ -45,11 +45,8 @@ private:
 		void Save();
 
 	private:
-		template <class T>
-		T ToColor(const std::string& a_str);
-
-		template <class T>
-		std::string ToString(const T& a_style, bool a_hex);
+		static ImVec4      ToColor(const std::string& a_str);
+		static std::string ToString(const ImVec4& a_color, bool a_hex);
 
 		REX::TIniSetting<std::string> setting;
 		ImVec4                        color;
@@ -59,8 +56,8 @@ private:
 	ImVec4      GetLineColor(float a_chargeFraction) const;
 
 	// members
-	REX::TIniSetting<bool> enabled{ "Trajectory", "bEnable", true };
-	REX::TIniSetting<bool> showWhenCharging{ "Trajectory", "bEnableWhenCharging", true };
+	REX::TIniSetting<bool> enabled{ "Trajectory", "bShowTrajectory", true };
+	REX::TIniSetting<bool> onlyWhileCharging{ "Trajectory", "bOnlyWhileCharging", true };
 
 	REX::TIniSetting<float> thicknessImpl{ "Trajectory", "fLineThickness", 3.0f };
 	float                   thickness{ 0.0f };
@@ -78,49 +75,3 @@ private:
 	static constexpr std::int32_t segCount{ 128 };
 	static constexpr float        timeStep{ 1.0f / 20.0f };
 };
-
-template <class T>
-T TrajectoryOverlay::ColorSetting::ToColor(const std::string& a_str)
-{
-	if constexpr (std::is_same_v<ImVec4, T>) {
-		static boost::regex rgb_pattern("([0-9]+),([0-9]+),([0-9]+),([0-9]+)");
-		static boost::regex hex_pattern("#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})");
-
-		boost::smatch rgb_matches;
-		boost::smatch hex_matches;
-
-		if (boost::regex_match(a_str, rgb_matches, rgb_pattern)) {
-			auto red = std::stoi(rgb_matches[1]);
-			auto green = std::stoi(rgb_matches[2]);
-			auto blue = std::stoi(rgb_matches[3]);
-			auto alpha = std::stoi(rgb_matches[4]);
-
-			return { red / 255.0f, green / 255.0f, blue / 255.0f, alpha / 255.0f };
-		}
-		if (boost::regex_match(a_str, hex_matches, hex_pattern)) {
-			auto red = std::stoi(hex_matches[1], 0, 16);
-			auto green = std::stoi(hex_matches[2], 0, 16);
-			auto blue = std::stoi(hex_matches[3], 0, 16);
-			auto alpha = std::stoi(hex_matches[4], 0, 16);
-
-			return { red / 255.0f, green / 255.0f, blue / 255.0f, alpha / 255.0f };
-		}
-
-		return T();
-	} else {
-		return REX::STR::TO_NUM<T>(a_str);
-	}
-}
-
-template <class T>
-std::string TrajectoryOverlay::ColorSetting::ToString(const T& a_style, bool a_hex)
-{
-	if constexpr (std::is_same_v<ImVec4, T>) {
-		if (a_hex) {
-			return std::format("#{:02X}{:02X}{:02X}{:02X}", static_cast<std::uint8_t>(255.0f * a_style.x), static_cast<std::uint8_t>(255.0f * a_style.y), static_cast<std::uint8_t>(255.0f * a_style.z), static_cast<std::uint8_t>(255.0f * a_style.w));
-		}
-		return std::format("{},{},{},{}", static_cast<std::uint8_t>(255.0f * a_style.x), static_cast<std::uint8_t>(255.0f * a_style.y), static_cast<std::uint8_t>(255.0f * a_style.z), static_cast<std::uint8_t>(255.0f * a_style.w));
-	} else {
-		return std::format("{:.3f}", a_style);
-	}
-}

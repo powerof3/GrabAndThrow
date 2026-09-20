@@ -70,8 +70,8 @@ void SettingsTool::Draw()
 
 			FUCK::BeginDisabled(!overlay->enabled);
 			{
-				FUCK::Checkbox("$GT_ShowTrajectoryWhenCharging"_T, &stl::setting(overlay->showWhenCharging));
-				
+				FUCK::Checkbox("$GT_OnlyWhileCharging"_T, &stl::setting(overlay->onlyWhileCharging));
+
 				FUCK::SliderInt("$GT_Opacity"_T, &stl::setting(overlay->trajectoryAlpha), 0, 255);
 
 				if (FUCK::SliderFloat("$GT_LineThickness"_T, &stl::setting(overlay->thicknessImpl), 1.0f, 10.0f, "%.1f")) {

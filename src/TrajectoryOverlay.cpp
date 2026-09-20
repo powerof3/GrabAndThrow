@@ -15,7 +15,7 @@ void TrajectoryOverlay::RenderOverlay()
 
 	const auto handler = GrabThrowHandler::GetSingleton();
 
-	if (showWhenCharging && handler->GetChargeDuration() <= 0.0f) {
+	if (onlyWhileCharging && handler->GetChargeDuration() <= 0.0f) {
 		return;
 	}
 
@@ -136,6 +136,9 @@ void TrajectoryOverlay::Load()
 	lineColorCharged.Load();
 	markerColor.Load();
 	markerColorActor.Load();
+
+	markerSize = 0.0f;
+	thickness = 0.0f;
 }
 
 void TrajectoryOverlay::Save()
@@ -153,12 +156,47 @@ TrajectoryOverlay::ColorSetting::ColorSetting(std::string_view a_key, ImVec4 a_d
 
 void TrajectoryOverlay::ColorSetting::Load()
 {
-	color = ToColor<ImVec4>(setting.GetValue());
+	color = ToColor(setting.GetValue());
 }
 
 void TrajectoryOverlay::ColorSetting::Save()
 {
 	setting.SetValue(ToString(color, true));
+}
+
+
+ImVec4 TrajectoryOverlay::ColorSetting::ToColor(const std::string& a_str)
+{
+	static boost::regex rgb_pattern("([0-9]+),([0-9]+),([0-9]+)");
+	static boost::regex hex_pattern("#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})");
+
+	boost::smatch rgb_matches;
+	boost::smatch hex_matches;
+
+	if (boost::regex_match(a_str, rgb_matches, rgb_pattern)) {
+		auto red = std::stoi(rgb_matches[1]);
+		auto green = std::stoi(rgb_matches[2]);
+		auto blue = std::stoi(rgb_matches[3]);
+
+		return { red / 255.0f, green / 255.0f, blue / 255.0f, 1.0f };
+	}
+	if (boost::regex_match(a_str, hex_matches, hex_pattern)) {
+		auto red = std::stoi(hex_matches[1], 0, 16);
+		auto green = std::stoi(hex_matches[2], 0, 16);
+		auto blue = std::stoi(hex_matches[3], 0, 16);
+
+		return { red / 255.0f, green / 255.0f, blue / 255.0f, 1.0f };
+	}
+
+	return {};
+}
+
+std::string TrajectoryOverlay::ColorSetting::ToString(const ImVec4& a_color, bool a_hex)
+{
+	if (a_hex) {
+		return std::format("#{:02X}{:02X}{:02X}{:02X}", static_cast<std::uint32_t>(255.0f * a_color.x), static_cast<std::uint32_t>(255.0f * a_color.y), static_cast<std::uint32_t>(255.0f * a_color.z), static_cast<std::uint32_t>(255.0f * a_color.w));
+	}
+	return std::format("{},{},{},{}", static_cast<std::uint32_t>(255.0f * a_color.x), static_cast<std::uint32_t>(255.0f * a_color.y), static_cast<std::uint32_t>(255.0f * a_color.z), static_cast<std::uint32_t>(255.0f * a_color.w));
 }
 
 void TrajectoryOverlay::TickObjectPath(RE::NiPoint3& a_position, RE::NiPoint3& a_velocity, const RE::NiPoint3& a_gravity, float a_dt)
