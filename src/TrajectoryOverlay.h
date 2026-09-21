@@ -67,8 +67,8 @@ private:
 
 	REX::TIniSetting<std::int32_t> trajectoryAlpha{ "Trajectory", "iOpacity", 230 };
 
-	ColorSetting lineColorMin{ "sLineColorUncharged", ImVec4(0.984f, 0.984f, 0.984f, 1.0f) };
-	ColorSetting lineColorMax{ "sLineColorCharged", ImVec4(1.0f, 0.667f, 0.157f, 1.0f) };
+	ColorSetting lineColorMin{ "sLineColorMinStrength", ImVec4(0.984f, 0.984f, 0.984f, 1.0f) };
+	ColorSetting lineColorMax{ "sLineColorMaxStrength", ImVec4(1.0f, 0.667f, 0.157f, 1.0f) };
 	ColorSetting markerColor{ "sMarkerColor", ImVec4(0.984f, 0.984f, 0.984f, 1.0f) };
 	ColorSetting markerColorActor{ "sMarkerColorActor", ImVec4(1.0f, 0.157f, 0.157f, 1.0f) };
 
