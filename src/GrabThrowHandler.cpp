@@ -115,7 +115,7 @@ bool GrabThrowHandler::ClearThrownObject(RE::bhkRigidBody* a_body)
 
 float GrabThrowHandler::GetForce() const
 {
-	auto force = chargeDuration * playerGrabThrowStrengthMult;
+	auto force = strength * playerGrabThrowStrengthMult;
 	if (playerGrabThrowImpulseMax > 0.0f) {
 		force = std::min(force, playerGrabThrowImpulseMax.GetValue());
 	}
@@ -226,21 +226,21 @@ RE::hkpRigidBody* GrabThrowHandler::GetGrabbedBody(RE::PlayerCharacter* a_player
 	return nullptr;
 }
 
-float GrabThrowHandler::GetChargeTime() const
+float GrabThrowHandler::GetMaxStrengthTime() const
 {
 	return (playerGrabThrowStrengthMult > 0.0f && playerGrabThrowImpulseMax > 0.0f) ?
 	           playerGrabThrowImpulseMax / playerGrabThrowStrengthMult :
 	           2.0f;
 }
 
-float GrabThrowHandler::GetClampedChargeDuration() const
+float GrabThrowHandler::GetClampedStrength() const
 {
-	return std::clamp(chargeDuration, 0.0f, GetChargeTime());
+	return std::clamp(strength, 0.0f, GetMaxStrengthTime());
 }
 
-float GrabThrowHandler::GetChargeFraction() const
+float GrabThrowHandler::GetStrengthFraction() const
 {
-	return GetClampedChargeDuration() / GetChargeTime();
+	return GetClampedStrength() / GetMaxStrengthTime();
 }
 
 void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_event)
@@ -346,7 +346,7 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player)
 				if (auto hkpRigidBody = reinterpret_cast<RE::hkpRigidBody*>(hkMouseSpring->entity)) {
 					auto bhkRigidBody = reinterpret_cast<RE::bhkRigidBody*>(hkpRigidBody->userData);
 
-					SetThrownObject(hkpRigidBody, GetClampedChargeDuration());
+					SetThrownObject(hkpRigidBody, GetClampedStrength());
 
 					auto mass = hkpRigidBody->motion.GetMass();
 					if (mass < fPhysicsDamage1Mass) {
@@ -355,7 +355,6 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player)
 					}
 
 					hkpRigidBody->SetLinearVelocity(RE::hkVector4());
-					hkpRigidBody->SetAngularVelocity(RE::hkVector4());
 					hkpRigidBody->ApplyLinearImpulse(hkVelocity * mass);
 				}
 			}

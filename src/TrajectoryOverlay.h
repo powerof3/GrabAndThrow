@@ -53,11 +53,11 @@ private:
 	};
 
 	static void TickObjectPath(RE::NiPoint3& a_position, RE::NiPoint3& a_velocity, const RE::NiPoint3& a_gravity, float a_dt);
-	ImVec4      GetLineColor(float a_chargeFraction) const;
+	ImVec4      GetLineColor(float a_strengthFraction) const;
 
 	// members
 	REX::TIniSetting<bool> enabled{ "Trajectory", "bShowTrajectory", true };
-	REX::TIniSetting<bool> onlyWhileCharging{ "Trajectory", "bOnlyWhileCharging", true };
+	REX::TIniSetting<bool> onlyWhileWindingUp{ "Trajectory", "bOnlyWhileWindingUp", true };
 
 	REX::TIniSetting<float> thicknessImpl{ "Trajectory", "fLineThickness", 3.0f };
 	float                   thickness{ 0.0f };
@@ -67,8 +67,8 @@ private:
 
 	REX::TIniSetting<std::int32_t> trajectoryAlpha{ "Trajectory", "iOpacity", 230 };
 
-	ColorSetting lineColorUncharged{ "sLineColorUncharged", ImVec4(0.984f, 0.984f, 0.984f, 1.0f) };
-	ColorSetting lineColorCharged{ "sLineColorCharged", ImVec4(1.0f, 0.667f, 0.157f, 1.0f) };
+	ColorSetting lineColorMin{ "sLineColorUncharged", ImVec4(0.984f, 0.984f, 0.984f, 1.0f) };
+	ColorSetting lineColorMax{ "sLineColorCharged", ImVec4(1.0f, 0.667f, 0.157f, 1.0f) };
 	ColorSetting markerColor{ "sMarkerColor", ImVec4(0.984f, 0.984f, 0.984f, 1.0f) };
 	ColorSetting markerColorActor{ "sMarkerColorActor", ImVec4(1.0f, 0.157f, 0.157f, 1.0f) };
 

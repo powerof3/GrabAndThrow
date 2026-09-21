@@ -10,8 +10,8 @@ void SettingsTool::Draw()
 	if (FUCK::BeginTabBar("##Settings")) {
 		if (FUCK::BeginTabItem("$GT_Throw"_T)) {
 			FUCK::SliderFloat("$GT_BaseImpulse"_T, &stl::setting(handler->playerGrabThrowImpulseBase), 0.0f, 1000.0f, "%.0f");
-			FUCK::SliderFloat("$GT_MaxChargeImpulse"_T, &stl::setting(handler->playerGrabThrowImpulseMax), 0.0f, 4000.0f, "%.0f");
-			FUCK::SliderFloat("$GT_ChargeRate"_T, &stl::setting(handler->playerGrabThrowStrengthMult), 50.0f, 2000.0f, "%.0f");
+			FUCK::SliderFloat("$GT_MaxImpulse"_T, &stl::setting(handler->playerGrabThrowImpulseMax), 0.0f, 4000.0f, "%.0f");
+			FUCK::SliderFloat("$GT_StrengthMult"_T, &stl::setting(handler->playerGrabThrowStrengthMult), 50.0f, 2000.0f, "%.0f");
 			FUCK::SliderFloat("$GT_DamageMult"_T, &stl::setting(handler->playerGrabThrowDamageMult), 0.0f, 1000.0f, "%.1f");
 			FUCK::EndTabItem();
 		}
@@ -70,7 +70,7 @@ void SettingsTool::Draw()
 
 			FUCK::BeginDisabled(!overlay->enabled);
 			{
-				FUCK::Checkbox("$GT_OnlyWhileCharging"_T, &stl::setting(overlay->onlyWhileCharging));
+				FUCK::Checkbox("$GT_OnlyWhileWindingUp"_T, &stl::setting(overlay->onlyWhileWindingUp));
 
 				FUCK::SliderInt("$GT_Opacity"_T, &stl::setting(overlay->trajectoryAlpha), 0, 255);
 
@@ -82,8 +82,8 @@ void SettingsTool::Draw()
 					overlay->markerSize = FUCK::Scale(overlay->markerSizeImpl);
 				}
 
-				FUCK::ColorEdit3("$GT_LineColorUncharged"_T, &overlay->lineColorUncharged.GetColor().x);
-				FUCK::ColorEdit3("$GT_LineColorCharged"_T, &overlay->lineColorCharged.GetColor().x);
+				FUCK::ColorEdit3("$GT_LineColorMinStrength"_T, &overlay->lineColorMin.GetColor().x);
+				FUCK::ColorEdit3("$GT_LineColorMaxStrength"_T, &overlay->lineColorMax.GetColor().x);
 
 				FUCK::ColorEdit3("$GT_MarkerColor"_T, &overlay->markerColor.GetColor().x);
 				FUCK::ColorEdit3("$GT_MarkerColorActor"_T, &overlay->markerColorActor.GetColor().x);

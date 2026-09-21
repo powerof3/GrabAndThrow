@@ -31,14 +31,14 @@ namespace Hooks
 					auto handler = GrabThrowHandler::GetSingleton();
 					if (a_event->IsUp()) {
 						handler->ThrowGrabbedObject(player);
-						handler->SetChargeDuration(0.0f);
+						handler->SetStrength(0.0f);
 						player->DestroyMouseSprings();
 					} else if (a_event->IsPressed()) {
-						handler->SetChargeDuration(a_event->HeldDuration());
+						handler->SetStrength(a_event->HeldDuration());
 					}
 					return;
 				}
-				GrabThrowHandler::GetSingleton()->SetChargeDuration(0.0f);
+				GrabThrowHandler::GetSingleton()->SetStrength(0.0f);
 				func(a_this, a_event, a_data);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;

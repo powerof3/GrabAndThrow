@@ -20,11 +20,11 @@ public:
 	RE::NiPoint3             GetThrowVelocity() const;  // game units/s
 	static RE::hkpRigidBody* GetGrabbedBody(RE::PlayerCharacter* a_player);
 
-	void  SetChargeDuration(float a_heldDuration) { chargeDuration = a_heldDuration; }
-	float GetChargeDuration() const { return chargeDuration; }
-	float GetChargeTime() const;
-	float GetClampedChargeDuration() const;
-	float GetChargeFraction() const;
+	void  SetStrength(float a_strength) { strength = a_strength; }
+	float GetStrength() const { return strength; }
+	float GetMaxStrengthTime() const;
+	float GetClampedStrength() const;
+	float GetStrengthFraction() const;
 
 	void SaveSettings() const;
 	void ApplyGameSettings() const;
@@ -78,7 +78,7 @@ private:
 	float fPhysicsDamageSpeedMult{};
 	float fPhysicsDamageSpeedBase{};
 
-	float chargeDuration{ 0.0f };
+	float strength{ 0.0f };
 
 	static constexpr auto path = R"(Data\SKSE\Plugins\po3_GrabAndThrow.ini)"sv;
 };

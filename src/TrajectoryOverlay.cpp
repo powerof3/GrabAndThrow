@@ -15,7 +15,7 @@ void TrajectoryOverlay::RenderOverlay()
 
 	const auto handler = GrabThrowHandler::GetSingleton();
 
-	if (onlyWhileCharging && handler->GetChargeDuration() <= 0.0f) {
+	if (onlyWhileWindingUp && handler->GetStrength() <= 0.0f) {
 		return;
 	}
 
@@ -36,7 +36,7 @@ void TrajectoryOverlay::RenderOverlay()
 	{
 		RE::BSReadLockGuard locker(bhkWorld->worldLock);
 
-		grabbedBody = handler->GetGrabbedBody(player);
+		grabbedBody = GrabThrowHandler::GetGrabbedBody(player);
 		if (!grabbedBody) {
 			return;
 		}
@@ -98,7 +98,7 @@ void TrajectoryOverlay::RenderOverlay()
 		thickness = FUCK::Scale(thicknessImpl);
 	}
 
-	auto lineColor = GetLineColor(handler->GetChargeFraction());
+	auto lineColor = GetLineColor(handler->GetStrengthFraction());
 
 	for (std::int32_t i = 0; i < entries; i++) {
 		auto& [p1, p2] = points[i];
@@ -131,8 +131,8 @@ void TrajectoryOverlay::RenderOverlay()
 
 void TrajectoryOverlay::Load()
 {
-	lineColorUncharged.Load();
-	lineColorCharged.Load();
+	lineColorMin.Load();
+	lineColorMax.Load();
 	markerColor.Load();
 	markerColorActor.Load();
 
@@ -142,8 +142,8 @@ void TrajectoryOverlay::Load()
 
 void TrajectoryOverlay::Save()
 {
-	lineColorUncharged.Save();
-	lineColorCharged.Save();
+	lineColorMin.Save();
+	lineColorMax.Save();
 	markerColor.Save();
 	markerColorActor.Save();
 }
@@ -204,13 +204,13 @@ void TrajectoryOverlay::TickObjectPath(RE::NiPoint3& a_position, RE::NiPoint3& a
 	a_position += a_velocity * a_dt;
 }
 
-ImVec4 TrajectoryOverlay::GetLineColor(float a_chargeFraction) const
+ImVec4 TrajectoryOverlay::GetLineColor(float a_strengthFraction) const
 {
-	const auto& uncharged = lineColorUncharged.GetColor();
-	const auto& charged = lineColorCharged.GetColor();
+	const auto& min = lineColorMin.GetColor();
+	const auto& max = lineColorMax.GetColor();
 
-	return { std::lerp(uncharged.x, charged.x, a_chargeFraction),
-		std::lerp(uncharged.y, charged.y, a_chargeFraction),
-		std::lerp(uncharged.z, charged.z, a_chargeFraction),
-		uncharged.w };
+	return { std::lerp(min.x, max.x, a_strengthFraction),
+		std::lerp(min.y, max.y, a_strengthFraction),
+		std::lerp(min.z, max.z, a_strengthFraction),
+		min.w };
 }
