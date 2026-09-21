@@ -5,7 +5,7 @@
 bool GrabThrowHandler::LoadSettings()
 {
 	auto overlay = TrajectoryOverlay::GetSingleton();
-	
+
 	const auto store = REX::FIniSettingStore::GetSingleton();
 	store->Init(path.data(), "");
 
@@ -57,7 +57,7 @@ void GrabThrowHandler::ApplyGameSettings() const
 void GrabThrowHandler::SaveSettings() const
 {
 	TrajectoryOverlay::GetSingleton()->Save();
-	
+
 	REX::FIniSettingStore::GetSingleton()->Save();
 }
 
@@ -125,7 +125,7 @@ float GrabThrowHandler::GetForce() const
 RE::NiPoint3 GrabThrowHandler::GetAimDirection(RE::PlayerCharacter* a_player)
 {
 	const auto camera = RE::PlayerCamera::GetSingleton();
-	
+
 	if (camera && camera->cameraRoot) {
 		const auto&  rot = camera->cameraRoot->world.rotate;
 		RE::NiPoint3 dir(rot.entry[0][1], rot.entry[1][1], rot.entry[2][1]);

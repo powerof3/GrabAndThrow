@@ -25,7 +25,6 @@ void TrajectoryOverlay::RenderOverlay()
 		return;
 	}
 
-
 	std::array<Segment, segCount> points;
 	std::int32_t                  entries = 0;
 
@@ -123,8 +122,8 @@ void TrajectoryOverlay::RenderOverlay()
 				markerSize = FUCK::Scale(markerSizeImpl);
 			}
 			const auto actualMarkerColor = hitCharacter ?
-				                               markerColorActor.GetColor(static_cast<float>(trajectoryAlpha) / 255.0f) :
-				                               markerColor.GetColor(static_cast<float>(trajectoryAlpha) / 255.0f);
+			                                   markerColorActor.GetColor(static_cast<float>(trajectoryAlpha) / 255.0f) :
+			                                   markerColor.GetColor(static_cast<float>(trajectoryAlpha) / 255.0f);
 			FUCK::DrawCircleFilled(screen, markerSize, actualMarkerColor);
 		}
 	}
@@ -163,7 +162,6 @@ void TrajectoryOverlay::ColorSetting::Save()
 {
 	setting.SetValue(ToString(color, true));
 }
-
 
 ImVec4 TrajectoryOverlay::ColorSetting::ToColor(const std::string& a_str)
 {
@@ -212,7 +210,7 @@ ImVec4 TrajectoryOverlay::GetLineColor(float a_chargeFraction) const
 	const auto& charged = lineColorCharged.GetColor();
 
 	return { std::lerp(uncharged.x, charged.x, a_chargeFraction),
-	         std::lerp(uncharged.y, charged.y, a_chargeFraction),                 
-	         std::lerp(uncharged.z, charged.z, a_chargeFraction),     
-	         uncharged.w };
+		std::lerp(uncharged.y, charged.y, a_chargeFraction),
+		std::lerp(uncharged.z, charged.z, a_chargeFraction),
+		uncharged.w };
 }
