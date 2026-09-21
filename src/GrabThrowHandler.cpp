@@ -226,12 +226,21 @@ RE::hkpRigidBody* GrabThrowHandler::GetGrabbedBody(RE::PlayerCharacter* a_player
 	return nullptr;
 }
 
+float GrabThrowHandler::GetChargeTime() const
+{
+	return (playerGrabThrowStrengthMult > 0.0f && playerGrabThrowImpulseMax > 0.0f) ?
+	           playerGrabThrowImpulseMax / playerGrabThrowStrengthMult :
+	           2.0f;
+}
+
+float GrabThrowHandler::GetClampedChargeDuration() const
+{
+	return std::clamp(chargeDuration, 0.0f, GetChargeTime());
+}
+
 float GrabThrowHandler::GetChargeFraction() const
 {
-	const float chargeTime = (playerGrabThrowStrengthMult > 0.0f && playerGrabThrowImpulseMax > 0.0f) ?
-	                             playerGrabThrowImpulseMax / playerGrabThrowStrengthMult :
-	                             2.0f; 
-	return std::clamp(chargeDuration / chargeTime, 0.0f, 1.0f);
+	return GetClampedChargeDuration() / GetChargeTime();
 }
 
 void GrabThrowHandler::ContactPointCallback(const RE::hkpContactPointEvent& a_event)
@@ -337,7 +346,7 @@ void GrabThrowHandler::ThrowGrabbedObject(RE::PlayerCharacter* a_player)
 				if (auto hkpRigidBody = reinterpret_cast<RE::hkpRigidBody*>(hkMouseSpring->entity)) {
 					auto bhkRigidBody = reinterpret_cast<RE::bhkRigidBody*>(hkpRigidBody->userData);
 
-					SetThrownObject(hkpRigidBody, GetChargeDuration());
+					SetThrownObject(hkpRigidBody, GetClampedChargeDuration());
 
 					auto mass = hkpRigidBody->motion.GetMass();
 					if (mass < fPhysicsDamage1Mass) {

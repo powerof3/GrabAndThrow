@@ -201,9 +201,8 @@ std::string TrajectoryOverlay::ColorSetting::ToString(const ImVec4& a_color, boo
 
 void TrajectoryOverlay::TickObjectPath(RE::NiPoint3& a_position, RE::NiPoint3& a_velocity, const RE::NiPoint3& a_gravity, float a_dt)
 {
-	const RE::NiPoint3 step = a_gravity - (a_velocity * RE::OBJECT_LINEAR_DAMPING);
-
-	a_velocity += step * a_dt;
+	a_velocity += a_gravity * a_dt;
+	a_velocity *= std::max(0.0f, 1.0f - RE::OBJECT_LINEAR_DAMPING * a_dt);
 	a_position += a_velocity * a_dt;
 }
 

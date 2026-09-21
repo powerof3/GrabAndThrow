@@ -22,6 +22,8 @@ public:
 
 	void  SetChargeDuration(float a_heldDuration) { chargeDuration = a_heldDuration; }
 	float GetChargeDuration() const { return chargeDuration; }
+	float GetChargeTime() const;
+	float GetClampedChargeDuration() const;
 	float GetChargeFraction() const;
 
 	void SaveSettings() const;
